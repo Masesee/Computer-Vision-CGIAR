@@ -9,7 +9,14 @@ def load_data():
     val_dir = os.path.join(DATASET_PATH, "test") # The images are contained in subfolders within this main folder
     
     train_data = tf.keras.preprocessing.image_dataset_from_directory(
-        train_dir, image_size=(224, 224), batch_size=32)
+        train_dir, 
+        image_size=(224, 224), 
+        batch_size=32,
+        label_mode="categorical") # Ensures labels are one-hot encoded
+    
     val_data = tf.keras.preprocessing.image_dataset_from_directory(
-        val_dir, image_size=(224, 224), batch_size=32)
+        val_dir, 
+        image_size=(224, 224), 
+        batch_size=32,
+        label_mode="categorical"  ) # Ensures labels are one-hot encoded
     return train_data, val_data
