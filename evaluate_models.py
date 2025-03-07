@@ -21,7 +21,7 @@ def load_training_history(model_name):
         return None
 
 def load_trained_model(model_name, imput_shape, num_classes):
-    model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model"
+    model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras"
     
     if os.path.exists(model_path):
         return tf.keras.models.load_model(model_path)
