@@ -25,7 +25,19 @@ def main():
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     
     # Train with validation set
-    model.fit(train_data, validation_data=val_data, epochs=10)
+    history = model.fit(train_data, validation_data=val_data, epochs=10)
+
+    # Save the model
+    model_save_path = f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_model"
+    model.save(model_save_path)
+    print(f' Model saved to {model_save_path}')
+
+    # Save the training history
+    import json
+    with open(f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_history.json", 'w') as f:
+        json.dump(history.history, f)
+    print(f"Training history saved for {args.model}"
+
 
 if __name__ == '__main__':
     main()
