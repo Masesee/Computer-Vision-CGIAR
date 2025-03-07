@@ -11,7 +11,7 @@ def load_data(validation_split = 0.2):
     # Get all images and their corresponding labels
     all_image_paths = []
     all_image_labels = []
-    class_names = sorted([d for d in os.path.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d))])
+    class_names = sorted([d for d in os.listdir(train_dir) if os.path.isdir(os.path.join(train_dir, d))])
 
     for class_idx, class_name in enumerate(class_names):
         class_dir = os.path.join(train_dir, class_name)
