@@ -36,7 +36,7 @@ def main():
     import json
     with open(f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_history.json", 'w') as f:
         json.dump(history.history, f)
-    print(f"Training history saved for {args.model}"
+    print(f"Training history saved for {args.model}")
 
 
 if __name__ == '__main__':
