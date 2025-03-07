@@ -2,7 +2,7 @@ import tensorflow as tf
 import os
 
 # Set dataset path
-DATASET_PATH = '/kaggle/input/cgiar-root-volume-estimation-challenge'
+DATASET_PATH = '/kaggle/input/cgiar-root-volume-estimation-challenge/data'
 
 def load_data():
     train_dir = os.path.join(DATASET_PATH, "train") # The images are contained in subfolders within this main folder
