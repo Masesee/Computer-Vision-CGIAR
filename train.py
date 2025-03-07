@@ -28,7 +28,7 @@ def main():
     history = model.fit(train_data, validation_data=val_data, epochs=10)
 
     # Save the model
-    model_save_path = f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_model"
+    model_save_path = f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_model.keras"
     model.save(model_save_path)
     print(f' Model saved to {model_save_path}')
 
