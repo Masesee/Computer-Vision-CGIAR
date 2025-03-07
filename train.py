@@ -11,7 +11,7 @@ def main():
     args = parser.parse_args()
 
     input_shape = (224, 224, 3)
-    num_classes = 10
+    num_classes = len(train_data.class_names) # Get the correct number of classes
     train_data, val_data = load_data()
 
     models = {
