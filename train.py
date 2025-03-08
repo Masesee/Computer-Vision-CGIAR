@@ -13,7 +13,7 @@ def main():
     args = parser.parse_args()
 
     input_shape = (224, 224, 3)
-    train_data, val_data = load_data(validation_split=0.2, task= 'regression')
+    train_data, val_data = load_data(validation_split=0.2)
     # num_classes = len(train_data.class_names) # Get the correct number of classes
     
     models = {
