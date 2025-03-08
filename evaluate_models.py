@@ -55,7 +55,15 @@ def evaluate_models():
         if model:
             # Evaluate on validation set
             eval_result = model.evaluate(val_data, verbose=1)
-            val_accuracy = eval_result[1]  # Assuming second metric is accuracy
+
+            metric_index = model.metrics_names.index("mae") if "mae" in model.metrics_names else None
+    
+            if metric_index is not None:
+                val_mae = eval_result[metric_index]  # ✅ Extract MAE correctly
+            else:
+                print(f"Warning: MAE metric not found for {model_name}, skipping...")
+            continue  # Skip this model
+            
             model_performances[model_name] = {
                 'path': f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras",
                 'accuracy': val_accuracy
