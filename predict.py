@@ -40,32 +40,43 @@ def predict_single_image(image_path, model):
         print(f"Error processing {image_path}: {str(e)}")
         return None
 
-def predict_directory(directory_path, model):
-    """Process all images in a directory and return predictions."""
-    # Supported image extensions
-    image_extensions = ['*.jpg', '*.jpeg', '*.png', '*.tif', '*.tiff']
-    
-    # Find all image files in the directory
+def find_all_images(directory_path):
+    """Recursively find all image files in directory and subdirectories."""
+    image_extensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff']
     image_files = []
-    for ext in image_extensions:
-        image_files.extend(glob.glob(os.path.join(directory_path, ext)))
-        image_files.extend(glob.glob(os.path.join(directory_path, ext.upper())))
+    
+    # Walk through all directories recursively
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            # Check if the file has an image extension
+            if any(file.lower().endswith(ext) for ext in image_extensions):
+                image_files.append(os.path.join(root, file))
+    
+    return image_files
+
+def predict_directory(directory_path, model):
+    """Process all images in a directory and its subdirectories and return predictions."""
+    # Find all image files recursively
+    image_files = find_all_images(directory_path)
     
     if not image_files:
-        print(f"No image files found in {directory_path}")
+        print(f"No image files found in {directory_path} or its subdirectories")
         return None
+    
+    print(f"Found {len(image_files)} images to process")
     
     # Process each image
     results = []
     for img_path in sorted(image_files):
-        filename = os.path.basename(img_path)
+        # Get relative path from the base directory for cleaner output
+        rel_path = os.path.relpath(img_path, directory_path)
         prediction = predict_single_image(img_path, model)
         if prediction is not None:
             results.append({
-                'image_filename': filename,
+                'image_path': rel_path,
                 'predicted_root_volume': prediction
             })
-            print(f"Predicted Root Volume for {filename}: {prediction:.4f}")
+            print(f"Predicted Root Volume for {rel_path}: {prediction:.4f}")
     
     # Create a DataFrame with results
     results_df = pd.DataFrame(results)
