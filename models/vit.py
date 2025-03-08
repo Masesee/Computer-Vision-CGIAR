@@ -21,8 +21,8 @@ def build_vit(input_shape, num_classes=1, regression=True):
     #  Convert to the format required by ViT: (batch_size, 3, 224, 224)
     pixel_values = tf.keras.layers.Permute((3, 1, 2))(inputs)  # Convert (H, W, C) → (C, H, W)
 
-    #  Ensure ViT receives a raw TensorFlow tensor (avoid KerasTensor issue)
-    pixel_values = tf.cast(pixel_values, dtype=tf.float32)
+    #  Use Lambda() to cast into tf.float32 (avoids KerasTensor issue)
+    pixel_values = tf.keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(pixel_values)
 
     #  Pass processed inputs to ViT model
     vit_outputs = vit_model(pixel_values).last_hidden_state[:, 0, :]
