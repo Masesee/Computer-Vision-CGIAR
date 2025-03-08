@@ -46,40 +46,49 @@ def evaluate_models():
 
     for model_name in model_names:
         print(f"\n🔍 Evaluating {model_name}...")
-
+    
         model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras"
-
+    
         if not os.path.exists(model_path):
             print(f"⚠️ Warning: {model_name} model not found, skipping...")
             continue
-
+    
         # Load model
-        model = load_model(model_path)
-
+        model = load_model(model_path, compile=True)  # Ensures metrics are restored
+    
         # Debugging: Print available metrics in the model
-        print(f"📌 Model {model_name} metrics: {model.metrics_names}")
-
-        # Evaluate model
-        eval_result = model.evaluate(val_data, verbose=1)
-
-        # Get MAE dynamically (Handles 'mae', 'mean_absolute_error', etc.)
-        metric_index = next((i for i, name in enumerate(model.metrics_names) if "mae" in name.lower()), None)
-
+        print(f"📌 Model {model_name} metrics_names before MAE check: {model.metrics_names}")
+    
+        # Handle 'compile_metrics' issue by checking if MAE exists inside it
+        if "compile_metrics" in model.metrics_names:
+            print(f"⚠️ Warning: {model_name} has 'compile_metrics' instead of actual metrics. Recompiling...")
+            model.compile(optimizer="adam", loss="mean_squared_error", metrics=["mae"])  # Recompile model
+            print(f" {model_name} recompiled with correct metrics.")
+    
+        # Re-check metrics after recompiling
+        print(f" Model {model_name} metrics_names after recompiling: {model.metrics_names}")
+    
+        # Extract MAE dynamically
+        metric_index = next((i for i, name in enumerate(model.metrics_names) if "mae" in name.lower() or "mean_absolute_error" in name.lower()), None)
+    
         if metric_index is None:
             print(f"⚠️ Warning: MAE metric not found for {model_name}, skipping...")
             continue
-
+    
+        # Evaluate model
+        eval_result = model.evaluate(val_data, verbose=1)
         val_mae = eval_result[metric_index]
-        print(f"✅ {model_name} Validation MAE: {val_mae:.4f}")
-
+        print(f" {model_name} Validation MAE: {val_mae:.4f}")
+    
         # Save model performance
         model_performances[model_name] = {
             'path': model_path,
             'mae': val_mae
         }
-
+    
         # Generate regression plot
         plot_regression_results(model, val_data, model_name)
+
 
     # Ensure `best_model_info.json` is always created
     if model_performances:
@@ -87,7 +96,7 @@ def evaluate_models():
         best_model_path = model_performances[best_model_name]['path']
         best_mae = model_performances[best_model_name]['mae']
 
-        print(f"\n🏆 Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
+        print(f"\n Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
 
         best_model_info = {
             'name': best_model_name,
