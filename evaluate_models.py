@@ -119,29 +119,27 @@ def plot_loss(histories):
     plt.savefig('/kaggle/working/Computer-Vision-CGIAR/validation_loss.png')
     plt.show()
 
-def plot_confusion_matrix(model, dataset, class_names, model_name):
+def plot_regression_results(model, dataset, model_name):
+    """Plot predicted vs actual root volume for regression."""
     y_true = []
     y_pred = []
-    
+
     for images, labels in dataset:
         predictions = model.predict(images)
-        y_true.extend(np.argmax(labels, axis=1))
-        y_pred.extend(np.argmax(predictions, axis=1))
-    
-    conf_matrix = confusion_matrix(y_true, y_pred)
-    
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(conf_matrix, annot=False, fmt='d', cmap='Blues',
-                xticklabels=range(len(class_names)),
-                yticklabels=range(len(class_names)))
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title(f'Confusion Matrix - {model_name}')
-    plt.savefig(f'/kaggle/working/Computer-Vision-CGIAR/confusion_matrix_{model_name}.png')
+        y_true.extend(labels.numpy().flatten())  # Convert tensor to list
+        y_pred.extend(predictions.flatten())  # Flatten predictions
+
+    # Scatter plot: Actual vs. Predicted
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y_true, y_pred, alpha=0.5, label="Predicted vs. Actual")
+    plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], color="red", linestyle="--", label="Ideal Prediction")
+    plt.xlabel("Actual Root Volume")
+    plt.ylabel("Predicted Root Volume")
+    plt.title(f"Regression Predictions for {model_name}")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.5)
+    plt.savefig(f"/kaggle/working/Computer-Vision-CGIAR/regression_plot_{model_name}.png")
     plt.show()
-    
-    print(f"\nClassification Report - {model_name}")
-    print(classification_report(y_true, y_pred))
 
 if __name__ == "__main__":
     evaluate_models()
