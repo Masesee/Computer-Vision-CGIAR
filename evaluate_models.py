@@ -41,7 +41,7 @@ def evaluate_models():
     # Load validation data
     _, val_data = load_data(validation_split=0.2)
     input_shape = (224, 224, 3)
-    num_classes = len(val_data.class_names)
+    num_classes = 1
 
     histories = {}
     
