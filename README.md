@@ -18,4 +18,4 @@ python evaluate_models.py
 ## Prediction
 
 
-python predict.py path/to/image.jpg
+python predict.py
