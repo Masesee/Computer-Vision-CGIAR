@@ -23,7 +23,7 @@ def main():
         "vit": build_vit
     }
 
-    model = models[args.model](input_shape, num_classes=1, regression = True)
+    model = models[args.model](input_shape, num_classes=1, regression = True)  # REVISIT
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
     
     # Train with validation set
