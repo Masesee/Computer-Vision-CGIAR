@@ -50,45 +50,40 @@ def evaluate_models():
         model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras"
     
         if not os.path.exists(model_path):
-            print(f"⚠️ Warning: {model_name} model not found, skipping...")
+            print(f" Warning: {model_name} model not found, skipping...")
             continue
     
-        # Load model
-        model = load_model(model_path, compile=True)  # Ensures metrics are restored
-    
-        # Debugging: Print available metrics in the model
-        print(f"📌 Model {model_name} metrics_names before MAE check: {model.metrics_names}")
-    
-        # Handle 'compile_metrics' issue by checking if MAE exists inside it
-        if "compile_metrics" in model.metrics_names:
-            print(f"⚠️ Warning: {model_name} has 'compile_metrics' instead of actual metrics. Recompiling...")
-            model.compile(optimizer="adam", loss="mean_squared_error", metrics=["mae"])  # Recompile model
-            print(f" {model_name} recompiled with correct metrics.")
-    
-        # Re-check metrics after recompiling
-        print(f" Model {model_name} metrics_names after recompiling: {model.metrics_names}")
-    
-        # Extract MAE dynamically
-        metric_index = next((i for i, name in enumerate(model.metrics_names) if "mae" in name.lower() or "mean_absolute_error" in name.lower()), None)
-    
-        if metric_index is None:
-            print(f"⚠️ Warning: MAE metric not found for {model_name}, skipping...")
+        try:
+            # Load model without compile flag first
+            model = load_model(model_path)
+            
+            # Always recompile to ensure metrics are correctly set
+            print(f" Recompiling {model_name} with explicit metrics...")
+            model.compile(optimizer="adam", loss="mean_squared_error", metrics=["mae"])
+            
+            # Evaluate model - now we can rely on fixed indices
+            # After recompiling, the first value will be loss and the second will be MAE
+            eval_result = model.evaluate(val_data, verbose=1)
+            
+            # The first element (index 0) is always the loss, and index 1 is the first metric (MAE)
+            val_loss = eval_result[0]
+            val_mae = eval_result[1]
+            
+            print(f" {model_name} Validation Loss: {val_loss:.4f}")
+            print(f" {model_name} Validation MAE: {val_mae:.4f}")
+            
+            # Save model performance
+            model_performances[model_name] = {
+                'path': model_path,
+                'mae': val_mae
+            }
+            
+            # Generate regression plot
+            plot_regression_results(model, val_data, model_name)
+            
+        except Exception as e:
+            print(f"❌ Error evaluating {model_name}: {str(e)}")
             continue
-    
-        # Evaluate model
-        eval_result = model.evaluate(val_data, verbose=1)
-        val_mae = eval_result[metric_index]
-        print(f" {model_name} Validation MAE: {val_mae:.4f}")
-    
-        # Save model performance
-        model_performances[model_name] = {
-            'path': model_path,
-            'mae': val_mae
-        }
-    
-        # Generate regression plot
-        plot_regression_results(model, val_data, model_name)
-
 
     # Ensure `best_model_info.json` is always created
     if model_performances:
@@ -96,7 +91,7 @@ def evaluate_models():
         best_model_path = model_performances[best_model_name]['path']
         best_mae = model_performances[best_model_name]['mae']
 
-        print(f"\n Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
+        print(f"\n🏆 Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
 
         best_model_info = {
             'name': best_model_name,
@@ -104,14 +99,14 @@ def evaluate_models():
             'mae': float(best_mae)
         }
     else:
-        print("⚠️ No models were evaluated successfully. Creating empty best_model_info.json.")
+        print(" No models were evaluated successfully. Creating empty best_model_info.json.")
         best_model_info = {"name": None, "path": None, "mae": None}
 
     # Save best model info
     with open(BEST_MODEL_PATH, 'w') as f:
         json.dump(best_model_info, f)
 
-    print(f"✅ Best model info saved to {BEST_MODEL_PATH}")
+    print(f" Best model info saved to {BEST_MODEL_PATH}")
 
 def plot_mae(histories):
     """Plot Mean Absolute Error (MAE) for multiple models over training epochs."""
@@ -131,7 +126,7 @@ def plot_loss(histories):
     """Plot validation loss for multiple models."""
     plt.figure(figsize=(12, 6))
     for model_name, history in histories.items():
-        if history and 'val_loss' in history:  # ✅ Ensure 'val_loss' exists
+        if history and 'val_loss' in history:  #  Ensure 'val_loss' exists
             plt.plot(history['val_loss'], label=f"{model_name} Validation Loss")
     plt.xlabel('Epochs')
     plt.ylabel('Loss (MSE)')
