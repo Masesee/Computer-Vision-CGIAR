@@ -15,15 +15,20 @@ def build_vit(input_shape, num_classes=1, regression=True):
     """
     vit_model = TFAutoModel.from_pretrained("google/vit-base-patch16-224")
 
-    # Define inputs
+    # Define input layer (Standard 224x224 RGB image)
     inputs = tf.keras.layers.Input(shape=input_shape)
 
-    # Convert image input to ViT expected format
-    pixel_values = tf.keras.layers.Rescaling(1.0 / 255)(inputs)  # Normalize images
+    #  Convert to the format required by ViT: (batch_size, 3, 224, 224)
+    pixel_values = tf.keras.layers.Permute((3, 1, 2))(inputs)  # Convert (H, W, C) → (C, H, W)
+
+    #  Ensure ViT receives a raw TensorFlow tensor (avoid KerasTensor issue)
+    pixel_values = tf.cast(pixel_values, dtype=tf.float32)
+
+    #  Pass processed inputs to ViT model
     vit_outputs = vit_model(pixel_values).last_hidden_state[:, 0, :]
 
     # Regression head
-    output = tf.keras.layers.Dense(1, activation="linear")(vit_outputs)  # Single neuron for regression
+    output = tf.keras.layers.Dense(1, activation="linear")(vit_outputs)  #  Single neuron for regression
 
     # Build final model
     model = tf.keras.Model(inputs=inputs, outputs=output)
