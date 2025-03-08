@@ -52,23 +52,29 @@ def evaluate_models():
             histories[model_name] = history
             
         model = load_trained_model(model_name, input_shape, num_classes)
-        if model:
-            # Evaluate on validation set
-            eval_result = model.evaluate(val_data, verbose=1)
 
-            metric_index = model.metrics_names.index("mae") if "mae" in model.metrics_names else None
+        if model:
+            # Evaluate model on validation set
+            eval_result = model.evaluate(val_data, verbose=1)
+            # Check for both "mae" and "mean_absolute_error"
+            metric_index = None
+            for metric_name in ["mae", "mean_absolute_error"]:
+                if metric_name in model.metrics_names:
+                    metric_index = model.metrics_names.index(metric_name)
+                    break
     
             if metric_index is not None:
                 val_mae = eval_result[metric_index]  # ✅ Extract MAE correctly
             else:
                 print(f"Warning: MAE metric not found for {model_name}, skipping...")
-            continue  # Skip this model
-            
+                continue  # Skip this model
+
+            # Store results in dictionary
             model_performances[model_name] = {
                 'path': f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras",
-                'accuracy': val_accuracy
-            }
-            print(f"{model_name} Validation Accuracy: {val_accuracy:.4f}")
+                'mae': val_mae
+                }
+            print(f"{model_name} Validation MAE: {val_mae:.4f}")
             
             # Plot regression predictions
             plot_regression_results(model, val_data, model_name)
