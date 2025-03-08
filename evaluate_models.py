@@ -30,9 +30,11 @@ def load_trained_model(model_name, input_shape, num_classes):
         print(f"No saved model found for {model_name}")
         return None
 
+BEST_MODEL_PATH = "/kaggle/working/Computer-Vision-CGIAR/best_model_info.json"
+
 def evaluate_models():
     """
-    Evaluates all trained models and selects the best one based on validation accuracy.
+    Evaluates all trained models and selects the best one based on validation MAE.
     Saves the best model's details in a JSON file.
     """
     model_names = ['resnet', 'efficientnet', 'mobilenet', 'vit']
@@ -41,50 +43,47 @@ def evaluate_models():
     # Load validation data
     _, val_data = load_data(validation_split=0.2)
     input_shape = (224, 224, 3)
-    num_classes = 1
 
     histories = {}
     
     for model_name in model_names:
         print(f"\nEvaluating {model_name}...")
-        history = load_training_history(model_name)
-        if history:
-            histories[model_name] = history
-            
-        model = load_trained_model(model_name, input_shape, num_classes)
-    
-        if not model:
-            print(f"Skipping {model_name}: Model not found.")
+        model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras"
+
+        if not os.path.exists(model_path):
+            print(f"⚠️ Warning: {model_name} model not found, skipping...")
             continue
-    
+
+        # Load model correctly
+        model = load_model(model_path)
+
         eval_result = model.evaluate(val_data, verbose=1)
-    
-        # ✅ Get MAE metric dynamically
+
+        # Get MAE metric dynamically
         metric_index = next((i for i, name in enumerate(model.metrics_names) if name in ["mae", "mean_absolute_error"]), None)
-    
+
         if metric_index is None:
             print(f"⚠️ Warning: MAE metric not found for {model_name}, skipping...")
             continue
-    
+
         val_mae = eval_result[metric_index]
         print(f"{model_name} Validation MAE: {val_mae:.4f}")
-    
-        # ✅ Call regression plot function AFTER verifying evaluation was successful
+
+        # Call regression plot function AFTER verifying evaluation was successful
         plot_regression_results(model, val_data, model_name)
-    
+
         model_performances[model_name] = {
-            'path': f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras",
+            'path': model_path,
             'mae': val_mae
         }
-                
 
-    # Select the best model (lowest MAE)
+    # Ensure `best_model_info.json` is saved even if no models pass evaluation
     if model_performances:
         best_model_name = min(model_performances, key=lambda k: model_performances[k]['mae'])
         best_model_path = model_performances[best_model_name]['path']
         best_mae = model_performances[best_model_name]['mae']
 
-        print(f"\nBest model: {best_model_name} with Validation MAE: {best_mae:.4f}")
+        print(f"\n Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
 
         # Save best model info
         best_model_info = {
@@ -92,18 +91,15 @@ def evaluate_models():
             'path': best_model_path,
             'mae': float(best_mae)
         }
-
-        json_path = "/kaggle/working/Computer-Vision-CGIAR/best_model_info.json"
-        with open(json_path, 'w') as f:
-            json.dump(best_model_info, f)
-
-        print(f"Best model info saved to {json_path}")
-
-    if histories:
-        plot_mae(histories)
-        plot_loss(histories)
     else:
-        print("No training histories found. Make sure to save training history during training.")
+        print("⚠️ No models were evaluated successfully. Creating empty best_model_info.json.")
+        best_model_info = {"name": None, "path": None, "mae": None}
+
+    # Ensure `best_model_info.json` is always created
+    with open(BEST_MODEL_PATH, 'w') as f:
+        json.dump(best_model_info, f)
+
+    print(f"Best model info saved to {BEST_MODEL_PATH}")
 
 def plot_mae(histories):
     """Plot Mean Absolute Error (MAE) for multiple models over training epochs."""
