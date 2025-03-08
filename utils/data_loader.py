@@ -6,8 +6,8 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 # Set dataset path
-DATASET_PATH = '/kaggle/input/cgiar-root-volume-estimation-challenge/data'
-MAIN_PATH = '/kaggle/input/cgiar-root-volume-estimation-challenge'
+DATASET_PATH = Path('/kaggle/input/cgiar-root-volume-estimation-challenge/data')
+MAIN_PATH = Path('/kaggle/input/cgiar-root-volume-estimation-challenge')
 
 def get_images_within_range(base_path: Path, folder: str, side: str, start: int, end: int):
     """
