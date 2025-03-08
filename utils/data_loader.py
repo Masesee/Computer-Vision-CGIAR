@@ -95,10 +95,10 @@ def load_data(validation_split=0.2):
         return img, tf.expand_dims(label, axis=-1)  # Ensure shape (batch, 1)
 
     # Convert to TensorFlow datasets
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_paths, train_labels))
+    train_dataset = tf.data.Dataset.from_tensor_slices((list(map(str, train_paths)), train_labels))
     train_dataset = train_dataset.map(preprocess).batch(32).prefetch(tf.data.AUTOTUNE)
 
-    val_dataset = tf.data.Dataset.from_tensor_slices((val_paths, val_labels))
+    val_dataset = tf.data.Dataset.from_tensor_slices((list(map(str, val_paths)), val_labels))
     val_dataset = val_dataset.map(preprocess).batch(32).prefetch(tf.data.AUTOTUNE)
 
     return train_dataset, val_dataset
