@@ -62,22 +62,22 @@ def evaluate_models():
             }
             print(f"{model_name} Validation Accuracy: {val_accuracy:.4f}")
             
-            # Plot confusion matrix
-            plot_confusion_matrix(model, val_data, val_data.class_names, model_name)
+            # Plot regression predictions
+            plot_regression_results(model, val_data, model_name)
 
-    # Select the best model
+    # Select the best model (lowest MAE)
     if model_performances:
-        best_model_name = max(model_performances, key=lambda k: model_performances[k]['accuracy'])
+        best_model_name = min(model_performances, key=lambda k: model_performances[k]['mae'])
         best_model_path = model_performances[best_model_name]['path']
-        best_accuracy = model_performances[best_model_name]['accuracy']
+        best_mae = model_performances[best_model_name]['mae']
 
-        print(f"\nBest model: {best_model_name} with Validation Accuracy: {best_accuracy:.4f}")
+        print(f"\nBest model: {best_model_name} with Validation MAE: {best_mae:.4f}")
 
         # Save best model info
         best_model_info = {
             'name': best_model_name,
             'path': best_model_path,
-            'accuracy': float(best_accuracy)
+            'mae': float(best_mae)
         }
 
         json_path = "/kaggle/working/Computer-Vision-CGIAR/best_model_info.json"
@@ -86,9 +86,7 @@ def evaluate_models():
 
         print(f"Best model info saved to {json_path}")
 
-    # Plot accuracy and loss comparisons if histories exist
     if histories:
-        plot_accuracy(histories)
         plot_loss(histories)
     else:
         print("No training histories found. Make sure to save training history during training.")
