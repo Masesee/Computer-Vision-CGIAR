@@ -44,48 +44,51 @@ def evaluate_models():
     _, val_data = load_data(validation_split=0.2)
     input_shape = (224, 224, 3)
 
-    histories = {}
-    
     for model_name in model_names:
-        print(f"\nEvaluating {model_name}...")
+        print(f"\n🔍 Evaluating {model_name}...")
+
         model_path = f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras"
 
         if not os.path.exists(model_path):
             print(f"⚠️ Warning: {model_name} model not found, skipping...")
             continue
 
-        # Load model correctly
+        # Load model
         model = load_model(model_path)
 
+        # Debugging: Print available metrics in the model
+        print(f"📌 Model {model_name} metrics: {model.metrics_names}")
+
+        # Evaluate model
         eval_result = model.evaluate(val_data, verbose=1)
 
-        # Get MAE metric dynamically
-        metric_index = next((i for i, name in enumerate(model.metrics_names) if name in ["mae", "mean_absolute_error"]), None)
+        # Get MAE dynamically (Handles 'mae', 'mean_absolute_error', etc.)
+        metric_index = next((i for i, name in enumerate(model.metrics_names) if "mae" in name.lower()), None)
 
         if metric_index is None:
             print(f"⚠️ Warning: MAE metric not found for {model_name}, skipping...")
             continue
 
         val_mae = eval_result[metric_index]
-        print(f"{model_name} Validation MAE: {val_mae:.4f}")
+        print(f"✅ {model_name} Validation MAE: {val_mae:.4f}")
 
-        # Call regression plot function AFTER verifying evaluation was successful
-        plot_regression_results(model, val_data, model_name)
-
+        # Save model performance
         model_performances[model_name] = {
             'path': model_path,
             'mae': val_mae
         }
 
-    # Ensure `best_model_info.json` is saved even if no models pass evaluation
+        # Generate regression plot
+        plot_regression_results(model, val_data, model_name)
+
+    # Ensure `best_model_info.json` is always created
     if model_performances:
         best_model_name = min(model_performances, key=lambda k: model_performances[k]['mae'])
         best_model_path = model_performances[best_model_name]['path']
         best_mae = model_performances[best_model_name]['mae']
 
-        print(f"\n Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
+        print(f"\n🏆 Best model: {best_model_name} with Validation MAE: {best_mae:.4f}")
 
-        # Save best model info
         best_model_info = {
             'name': best_model_name,
             'path': best_model_path,
@@ -95,11 +98,11 @@ def evaluate_models():
         print("⚠️ No models were evaluated successfully. Creating empty best_model_info.json.")
         best_model_info = {"name": None, "path": None, "mae": None}
 
-    # Ensure `best_model_info.json` is always created
+    # Save best model info
     with open(BEST_MODEL_PATH, 'w') as f:
         json.dump(best_model_info, f)
 
-    print(f"Best model info saved to {BEST_MODEL_PATH}")
+    print(f"✅ Best model info saved to {BEST_MODEL_PATH}")
 
 def plot_mae(histories):
     """Plot Mean Absolute Error (MAE) for multiple models over training epochs."""
@@ -131,8 +134,9 @@ def plot_loss(histories):
 
 def plot_regression_results(model, dataset, model_name):
     """Plot predicted vs actual root volume for regression."""
-    y_true = []
-    y_pred = []
+    import matplotlib.pyplot as plt
+
+    y_true, y_pred = [], []
 
     for images, labels in dataset:
         predictions = model.predict(images)
