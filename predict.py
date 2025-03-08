@@ -76,7 +76,7 @@ def predict_test_data():
     model = load_best_model()
     
     # Load test metadata
-    test_csv_path = MAIN_PATH / "test.csv"
+    test_csv_path = MAIN_PATH / "Test.csv"
     if not os.path.exists(test_csv_path):
         raise FileNotFoundError(f"Test CSV file not found: {test_csv_path}")
     
