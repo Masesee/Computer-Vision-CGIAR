@@ -2,12 +2,15 @@ import argparse
 import numpy as np
 import os
 import pandas as pd
+import re
+from pathlib import Path
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import load_model
-import glob
 
-# Model path to match evaluate_models.py output
+# Paths
 BEST_MODEL_PATH = "/kaggle/working/Computer-Vision-CGIAR/best_model_info.json"
+MAIN_PATH = Path('/kaggle/input/cgiar-root-volume-estimation-challenge')
+DATASET_PATH = MAIN_PATH / "data"
 
 def load_best_model():
     """Loads the best trained model based on saved evaluation results."""
@@ -40,76 +43,106 @@ def predict_single_image(image_path, model):
         print(f"Error processing {image_path}: {str(e)}")
         return None
 
-def find_all_images(directory_path):
-    """Recursively find all image files in directory and subdirectories."""
-    image_extensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff']
-    image_files = []
+def get_images_within_range(base_path, folder, side, start, end):
+    """
+    Get images from a folder that match the specified side (L/R) and layer range.
+    Based on the implementation from data_loader.py.
+    """
+    folder_path = Path(base_path) / folder
     
-    # Walk through all directories recursively
-    for root, dirs, files in os.walk(directory_path):
-        for file in files:
-            # Check if the file has an image extension
-            if any(file.lower().endswith(ext) for ext in image_extensions):
-                image_files.append(os.path.join(root, file))
+    # Check if folder exists
+    if not folder_path.exists():
+        return []
     
-    return image_files
+    # Regex pattern to match filenames (e.g., A6dzrkjqvl_L_033.png)
+    pattern = re.compile(r'_([LR])_(\d{3})\.png$')
+    
+    # Select images within range
+    selected_images = []
+    for img_name in os.listdir(folder_path):
+        match = pattern.search(img_name)
+        if match:
+            img_side = match.group(1)
+            layer = int(match.group(2))
+            if img_side == side and start <= layer <= end:
+                selected_images.append(str(folder_path / img_name))
+    
+    return selected_images
 
-def predict_directory(directory_path, model):
-    """Process all images in a directory and its subdirectories and return predictions."""
-    # Find all image files recursively
-    image_files = find_all_images(directory_path)
+def predict_test_data():
+    """
+    Process test data and produce formatted predictions according to competition requirements.
+    """
+    model = load_best_model()
     
-    if not image_files:
-        print(f"No image files found in {directory_path} or its subdirectories")
-        return None
+    # Load test metadata
+    test_csv_path = MAIN_PATH / "test.csv"
+    if not os.path.exists(test_csv_path):
+        raise FileNotFoundError(f"Test CSV file not found: {test_csv_path}")
     
-    print(f"Found {len(image_files)} images to process")
+    test_df = pd.read_csv(test_csv_path)
+    print(f"Loaded {len(test_df)} test samples from {test_csv_path}")
     
-    # Process each image
+    # Prepare results dataframe
     results = []
-    for img_path in sorted(image_files):
-        # Get relative path from the base directory for cleaner output
-        rel_path = os.path.relpath(img_path, directory_path)
-        prediction = predict_single_image(img_path, model)
-        if prediction is not None:
+    
+    # Process each test sample
+    for index, row in test_df.iterrows():
+        sample_id = row["ID"]
+        folder = row["FolderName"]
+        side = row["Side"]
+        start_layer = row["Start"]
+        end_layer = row["End"]
+        
+        # Get all relevant images
+        image_paths = get_images_within_range(DATASET_PATH / "test", folder, side, start_layer, end_layer)
+        
+        if not image_paths:
+            print(f"Warning: No images found for sample {sample_id}")
             results.append({
-                'image_path': rel_path,
-                'predicted_root_volume': prediction
+                "ID": sample_id,
+                "RootVolume": 0  # Default value when no images found
             })
-            print(f"Predicted Root Volume for {rel_path}: {prediction:.4f}")
+            continue
+        
+        # Predict root volume for each image
+        predictions = []
+        for img_path in image_paths:
+            prediction = predict_single_image(img_path, model)
+            if prediction is not None:
+                predictions.append(prediction)
+        
+        # Calculate average prediction if we have valid predictions
+        if predictions:
+            avg_prediction = sum(predictions) / len(predictions)
+        else:
+            avg_prediction = 0  # Default value when predictions fail
+        
+        # Add to results
+        results.append({
+            "ID": sample_id,
+            "RootVolume": avg_prediction
+        })
+        
+        # Progress indicator
+        if (index + 1) % 10 == 0 or (index + 1) == len(test_df):
+            print(f"Processed {index + 1}/{len(test_df)} samples")
     
-    # Create a DataFrame with results
+    # Create and save final predictions dataframe
     results_df = pd.DataFrame(results)
-    
-    # Save results to CSV
-    output_path = os.path.join(os.path.dirname(directory_path), 'predictions.csv')
+    output_path = "/kaggle/working/submission.csv"
     results_df.to_csv(output_path, index=False)
-    print(f"Saved {len(results)} predictions to {output_path}")
+    print(f"Saved predictions for {len(results_df)} samples to {output_path}")
     
     return results_df
 
-def predict(path):
-    """Preprocess image or directory of images and predict root volume."""
-    model = load_best_model()
-    
-    if os.path.isdir(path):
-        print(f"Processing directory: {path}")
-        return predict_directory(path, model)
-    else:
-        print(f"Processing single image: {path}")
-        prediction = predict_single_image(path, model)
-        print(f'Predicted Root Volume: {prediction:.4f}')
-        return prediction
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Make predictions on images')
-    parser.add_argument('image_path', type=str, help='Path to image or directory of images')
-    parser.add_argument('--output', type=str, help='Path to save predictions (CSV for directories)', default=None)
+    parser = argparse.ArgumentParser(description='Generate predictions for CGIAR root volume challenge')
+    parser.add_argument('--output', type=str, help='Path to save predictions CSV', default="/kaggle/working/submission.csv")
     
     args = parser.parse_args()
-    result = predict(args.image_path)
+    result_df = predict_test_data()
     
-    # If output path is provided and result is a DataFrame, save to the specified location
-    if args.output and isinstance(result, pd.DataFrame):
-        result.to_csv(args.output, index=False)
-        print(f"Results saved to {args.output}")
+    if args.output != "/kaggle/working/submission.csv":
+        result_df.to_csv(args.output, index=False)
+        print(f"Results also saved to {args.output}")
