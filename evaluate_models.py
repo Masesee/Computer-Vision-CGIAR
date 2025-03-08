@@ -96,7 +96,16 @@ def plot_confusion_matrix(model, dataset, class_names, model_name):
     
     # Print classification report
     print(f"\nClassification Report - {model_name}")
-    print(classification_report(y_true, y_pred, target_names=class_names[:10]))  # Print first 10 classes to save space
+    # Either use all class names or don't specify target_names at all
+    print(classification_report(y_true, y_pred))  # Removed target_names parameter
+                    # print(classification_report(y_true, y_pred, target_names=class_names[:10]))  # Print first 10 classes to save space
+
+    # See the top 10 classes by frequency, you can do:
+    print("\nTop classes by frequency:")
+    class_counts = np.bincount(y_true)
+    top_indices = np.argsort(-class_counts)[:10]  # Get indices of top 10 classes
+    for idx in top_indices:
+        print(f"Class {idx} ({class_names[idx]}): {class_counts[idx]} samples")
 
 def main():
     # Set up models to evaluate
