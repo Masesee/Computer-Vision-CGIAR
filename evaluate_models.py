@@ -52,32 +52,31 @@ def evaluate_models():
             histories[model_name] = history
             
         model = load_trained_model(model_name, input_shape, num_classes)
-
-        if model:
-            # Evaluate model on validation set
-            eval_result = model.evaluate(val_data, verbose=1)
-            # Check for both "mae" and "mean_absolute_error"
-            metric_index = None
-            for metric_name in ["mae", "mean_absolute_error"]:
-                if metric_name in model.metrics_names:
-                    metric_index = model.metrics_names.index(metric_name)
-                    break
     
-            if metric_index is not None:
-                val_mae = eval_result[metric_index]  # ✅ Extract MAE correctly
-            else:
-                print(f"Warning: MAE metric not found for {model_name}, skipping...")
-                continue  # Skip this model
-
-            # Store results in dictionary
-            model_performances[model_name] = {
-                'path': f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras",
-                'mae': val_mae
-                }
-            print(f"{model_name} Validation MAE: {val_mae:.4f}")
-            
-            # Plot regression predictions
-            plot_regression_results(model, val_data, model_name)
+        if not model:
+            print(f"Skipping {model_name}: Model not found.")
+            continue
+    
+        eval_result = model.evaluate(val_data, verbose=1)
+    
+        # ✅ Get MAE metric dynamically
+        metric_index = next((i for i, name in enumerate(model.metrics_names) if name in ["mae", "mean_absolute_error"]), None)
+    
+        if metric_index is None:
+            print(f"⚠️ Warning: MAE metric not found for {model_name}, skipping...")
+            continue
+    
+        val_mae = eval_result[metric_index]
+        print(f"{model_name} Validation MAE: {val_mae:.4f}")
+    
+        # ✅ Call regression plot function AFTER verifying evaluation was successful
+        plot_regression_results(model, val_data, model_name)
+    
+        model_performances[model_name] = {
+            'path': f"/kaggle/working/Computer-Vision-CGIAR/{model_name}_model.keras",
+            'mae': val_mae
+        }
+                
 
     # Select the best model (lowest MAE)
     if model_performances:
@@ -153,8 +152,12 @@ def plot_regression_results(model, dataset, model_name):
     plt.title(f"Regression Predictions for {model_name}")
     plt.legend()
     plt.grid(True, linestyle="--", alpha=0.5)
-    plt.savefig(f"/kaggle/working/Computer-Vision-CGIAR/regression_plot_{model_name}.png")
-    plt.show()
+
+    save_path = f"/kaggle/working/Computer-Vision-CGIAR/regression_plot_{model_name}.png"
+    plt.savefig(save_path)
+    print(f"Saved regression plot to {save_path}")
+    
+    plt.close()  # Prevents excessive plots from appearing in memory
 
 if __name__ == "__main__":
     evaluate_models()
