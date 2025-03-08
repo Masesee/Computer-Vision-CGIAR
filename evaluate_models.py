@@ -87,33 +87,36 @@ def evaluate_models():
         print(f"Best model info saved to {json_path}")
 
     if histories:
+        plot_mae(histories)
         plot_loss(histories)
     else:
         print("No training histories found. Make sure to save training history during training.")
 
-def plot_accuracy(histories):
+def plot_mae(histories):
+    """Plot Mean Absolute Error (MAE) for multiple models over training epochs."""
     plt.figure(figsize=(12, 6))
     for model_name, history in histories.items():
-        if history and 'val_accuracy' in history:
-            plt.plot(history['val_accuracy'], label=f'{model_name} Validation Accuracy')
+        if history and 'val_mae' in history: 
+            plt.plot(history['val_mae'], label=f'{model_name} Validation MAE')
     plt.xlabel('Epochs')
-    plt.ylabel('Validation Accuracy')
-    plt.title('Model Performance Comparison - Validation Accuracy')
+    plt.ylabel('Mean Absolute Error (MAE)')
+    plt.title('Model Performance Comparison - Validation MAE')
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.7)
-    plt.savefig('/kaggle/working/Computer-Vision-CGIAR/validation_accuracy.png')
+    plt.savefig('/kaggle/working/Computer-Vision-CGIAR/validation_mae.png')
     plt.show()
 
 def plot_loss(histories):
-    plt.figure(figsize=(12,6))
+    """Plot validation loss for multiple models."""
+    plt.figure(figsize=(12, 6))
     for model_name, history in histories.items():
-        if history and 'val_loss' in history:
+        if history and 'val_loss' in history:  # ✅ Ensure 'val_loss' exists
             plt.plot(history['val_loss'], label=f"{model_name} Validation Loss")
     plt.xlabel('Epochs')
-    plt.ylabel('Validation Loss')
+    plt.ylabel('Loss (MSE)')
     plt.title('Model Performance Comparison - Validation Loss')
     plt.legend()
-    plt.grid(True, linestyle='--', alpha = 0.7)
+    plt.grid(True, linestyle='--', alpha=0.7)
     plt.savefig('/kaggle/working/Computer-Vision-CGIAR/validation_loss.png')
     plt.show()
 
