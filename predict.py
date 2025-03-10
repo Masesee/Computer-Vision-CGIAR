@@ -12,8 +12,21 @@ BEST_MODEL_PATH = "/kaggle/working/Computer-Vision-CGIAR/best_model_info.json"
 MAIN_PATH = Path('/kaggle/input/cgiar-root-volume-estimation-challenge')
 DATASET_PATH = MAIN_PATH / "data"
 
-def load_best_model():
-    """Loads the best trained model based on saved evaluation results."""
+def load_best_model(model_path=None):
+    """
+    Loads a model for prediction.
+    
+    Args:
+        model_path (str, optional): Path to a specific model to load.
+                                   If None, loads the best model from best_model_info.json
+    """
+    if model_path:
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Specified model file not found: {model_path}")
+        print(f"Loading specified model: {model_path}")
+        return load_model(model_path)
+    
+    # Default behavior: load best model from JSON
     import json
     
     # Load best model details from JSON
@@ -69,11 +82,14 @@ def get_images_within_range(base_path, folder, side, start, end):
     
     return selected_images
 
-def predict_test_data():
+def predict_test_data(model_path=None):
     """
     Process test data and produce formatted predictions according to competition requirements.
+    
+    Args:
+        model_path (str, optional): Path to a specific model to use for prediction.
     """
-    model = load_best_model()
+    model = load_best_model(model_path)
     
     # Load test metadata
     test_csv_path = MAIN_PATH / "Test.csv"
@@ -138,10 +154,11 @@ def predict_test_data():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate predictions for CGIAR root volume challenge')
+    parser.add_argument('--model', type=str, help='Path to a specific model to use for prediction', default=None)
     parser.add_argument('--output', type=str, help='Path to save predictions CSV', default="/kaggle/working/submission.csv")
     
     args = parser.parse_args()
-    result_df = predict_test_data()
+    result_df = predict_test_data(model_path=args.model)
     
     if args.output != "/kaggle/working/submission.csv":
         result_df.to_csv(args.output, index=False)
