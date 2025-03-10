@@ -27,7 +27,7 @@ def main():
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae'])
     
     # Train with validation set
-    history = model.fit(train_data, validation_data=val_data, epochs=30)
+    history = model.fit(train_data, validation_data=val_data, epochs=20)
 
     # Save the model
     model_save_path = f"/kaggle/working/Computer-Vision-CGIAR/{args.model}_model.keras"
