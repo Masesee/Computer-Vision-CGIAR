@@ -5,6 +5,8 @@ from models.resnet import build_resnet
 from models.efficientnet import build_efficientnet
 from models.mobilenet import build_mobilenet
 from models.vit import build_vit
+from models.vgg import build_vgg
+from models.yolo import build_yolo
 from utils.data_loader import load_data
 
 def main():
@@ -20,7 +22,9 @@ def main():
         "resnet": build_resnet,
         "efficientnet": build_efficientnet,
         "mobilenet": build_mobilenet,
-        "vit": build_vit
+        "vit": build_vit,
+        "vgg": build_vgg,
+        "yolo": build_yolo
     }
 
     model = models[args.model](input_shape, num_classes=1, regression = True)  # REVISIT
